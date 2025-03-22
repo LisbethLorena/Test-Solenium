@@ -1,1 +1,0 @@
-ALTER TABLE tbl_consumptions ALTER COLUMN registration_time SET DEFAULT now();
