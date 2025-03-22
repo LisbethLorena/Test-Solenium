@@ -33,9 +33,12 @@ def create_user():
     try:
         db.session.add(new_user)
         db.session.commit()    
-    except IntegrityError:
+    except IntegrityError as e:
         db.session.rollback()
-        return jsonify({"error": "El usuario con este id ya existe", "code": 404})
+        error_message = str(e).lower()
+        if "foreignkeyviolation" in error_message or "notnullviolation" in error_message:
+            return jsonify({"error": "El usuario con este id ya existe", "code": 404})
+        return jsonify({"error": f"""Error de integridad en la base de datos, {e}""", "code": 500})
     return jsonify({"message": "Usuario creado", "id": new_user.id, "code": 200})
 
 # Actualizar usuario por id
@@ -62,6 +65,13 @@ def delete_user(user_id):
     if not user:
         return jsonify({"error": "Usuario no encontrado", "code": 404})
     
-    db.session.delete(user)
-    db.session.commit()
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        error_message = str(e).lower()
+        if "foreignkeyviolation" in error_message or "notnullviolation" in error_message:
+            return jsonify({"error": "No se puede eliminar el usuario porque tiene medidores asociados", "code": 400})
+        return jsonify({"error": f"""Error de integridad en la base de datos, {error_message}""", "code": 500})
     return jsonify({"message": "Usuario eliminado"})

@@ -76,9 +76,12 @@ def create_meter():
     try:
         db.session.add(new_meter)
         db.session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         db.session.rollback()
-        return jsonify({"error": "El medidor con este número de serie ya existe", "code": 404})    
+        error_message = str(e).lower()
+        if "uniqueconstraint" in error_message or "notnullviolation" in error_message:
+            return jsonify({"error": "El medidor con este número de serie ya existe", "code": 404})
+        return jsonify({"error": f"""Error de integridad en la base de datos, {e}""", "code": 500})    
     return jsonify({"message": "Medidor creado", "id": new_meter.serial_number, "code": 200})
 
 # Actualizar medidor por número de serie
@@ -94,6 +97,11 @@ def update_meter(serial_number):
     if set(data.keys()) != {"city", "id_user"}:
         return jsonify({"error": "Solo se permite actualizar los parámetros city e id_user", "code": 400})
 
+    # Validar si el usuario existe antes de asignarlo al medidor
+    new_user = User.query.get(data["id_user"])
+    if not new_user:
+        return jsonify({"error": "El usuario ingresado no se encuentra registrado aún", "code": 400})
+    
     # Si la ciudad cambia, obtener nueva latitud y longitud
     if data["city"] != meter.city:
         lat, lon = get_coordinates(data["city"])
@@ -115,8 +123,15 @@ def delete_meter(serial_number):
     if not meter:
         return jsonify({"error": "Medidor no encontrado", "code": 404})
     
-    db.session.delete(meter)
-    db.session.commit()
+    try:
+        db.session.delete(meter)
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        error_message = str(e).lower()
+        if "foreignkeyviolation" in error_message or "notnullviolation" in error_message:
+            return jsonify({"error": "No se puede eliminar el medidor porque tiene consumos asociados", "code": 400})
+        return jsonify({"error": f"""Error de integridad en la base de datos, {e}""", "code": 500})
     return jsonify({"message": "Medidor eliminado"})
 
 # Endpoint para generar consumo en un medidor
