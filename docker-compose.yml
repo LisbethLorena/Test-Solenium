@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: test_solenium
+      POSTGRES_USER: user_test
+      POSTGRES_PASSWORD: password_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: flask_app
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://user_test:password_test@db/test_solenium
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    entrypoint: ["/bin/sh", "-c", "flask db upgrade && flask run"]
+
+volumes:
+  postgres_data:

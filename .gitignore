@@ -1,0 +1,17 @@
+# Archivos de entorno
+.env
+
+# Archivos de Docker
+postgres_data/
+__pycache__/
+instance/
+
+# Archivos de base de datos y migraciones
+migrations/
+*.sqlite3
+
+# Dependencias de Python
+venv/
+
+# Archivos de Postman
+.postman/

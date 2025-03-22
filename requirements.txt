@@ -1,0 +1,7 @@
+#Requerimientos
+flask
+flask_sqlalchemy
+psycopg2
+flask-migrate
+requests
+python-dotenv
